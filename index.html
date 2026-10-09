@@ -4988,6 +4988,108 @@
             background: var(--lic-bg-surface);
             padding: 4px 10px;
         }
+        /* BLUF: Before -> move -> After, then the bottom line */
+        .diag-bluf {
+            padding: 8px 0 6px;
+        }
+        .diag-bluf-strip {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            align-items: stretch;
+            gap: 8px;
+        }
+        .diag-bluf-side {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            min-width: 0;
+            padding: 6px 8px;
+            border-radius: 4px;
+            background: var(--lic-bg-canvas);
+        }
+        .diag-bluf-label {
+            font-size: var(--lic-fs-sm);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--lic-text-muted);
+        }
+        .diag-bluf-standing {
+            font-size: var(--lic-fs-base);
+            font-weight: 700;
+            color: var(--lic-text-bright);
+        }
+        .diag-bluf-standing.tone-good { color: var(--lic-green); }
+        .diag-bluf-standing.tone-bad { color: var(--lic-red); }
+        .diag-bluf-standing.tone-even { color: var(--lic-blue); }
+        .diag-bluf-eval {
+            font-family: monospace;
+            font-size: var(--lic-fs-sm);
+            color: var(--lic-text-primary);
+        }
+        .diag-bluf-note {
+            font-size: var(--lic-fs-sm);
+            color: var(--lic-text-muted);
+        }
+        .diag-bluf-move {
+            align-self: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-size: var(--lic-fs-base);
+            color: var(--lic-text-bright);
+        }
+        .diag-bluf-move.is-down i { color: var(--lic-red); }
+        .diag-bluf-move.is-up i { color: var(--lic-green); }
+        .diag-bluf-move.is-same i { color: var(--lic-text-muted); }
+        .diag-bluf-text {
+            margin-top: 8px;
+            font-size: var(--lic-fs-base);
+            line-height: 1.45;
+            color: var(--lic-text-primary);
+        }
+        .diag-bluf-lead {
+            font-size: var(--lic-fs-sm);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--lic-text-muted);
+            margin-right: 6px;
+        }
+        @media (max-width: 420px) {
+            .diag-bluf-strip {
+                grid-template-columns: minmax(0, 1fr);
+            }
+            .diag-bluf-move {
+                flex-direction: row;
+                justify-content: center;
+            }
+            .diag-bluf-move i { transform: rotate(90deg); }
+        }
+        .diag-why-more {
+            border-top: 1px solid var(--lic-border);
+        }
+        .diag-why-more-toggle {
+            list-style: none;
+            cursor: pointer;
+            padding: 7px 0;
+            font-size: var(--lic-fs-sm);
+            font-weight: 600;
+            color: var(--lic-text-muted);
+            user-select: none;
+        }
+        .diag-why-more-toggle::-webkit-details-marker { display: none; }
+        .diag-why-more-toggle:hover { color: var(--lic-text-bright); }
+        .diag-why-more-toggle i {
+            display: inline-block;
+            margin-right: 6px;
+            transition: transform 0.15s ease;
+        }
+        .diag-why-more[open] > .diag-why-more-toggle i { transform: rotate(90deg); }
+        .diag-why-more > .diag-why-row:first-of-type {
+            border-top: 1px solid var(--lic-border);
+        }
         .diag-why-row {
             display: flex;
             align-items: flex-start;
@@ -7932,7 +8034,13 @@
                 html += ccCoachLineHtml(move, false, { bodyHtml, footHtml })
                     || `<div class="diag-fallback">${bodyHtml}${footHtml ? `<div class="cc-coach-foot">${footHtml}</div>` : ''}</div>`;
 
-                // 2. ONE META ROW (eval + win% + <=3 tags)
+                // 2. WHY CARD: bottom line up front, then situation / threat / idea / alternatives
+                const why = move.analysis && move.analysis.why;
+                if (why) {
+                    html += renderWhyCardHtml(move, index, why);
+                }
+
+                // 3. ONE META ROW (eval + win% + <=3 tags)
                 let metaHtml = '<div class="diag-meta">';
                 metaHtml += '<div class="diag-meta-stats d-flex align-items-center gap-2 flex-wrap">';
                 metaHtml += `<span class="player-dot ${move.is_white ? 'is-white' : 'is-black'}" title="${playerName}"></span>`;
@@ -7971,12 +8079,6 @@
                 }
                 metaHtml += '</div>';
                 html += metaHtml;
-
-                // 3. WHY CARD (situation / threat / idea / alternatives)
-                const why = move.analysis && move.analysis.why;
-                if (why) {
-                    html += renderWhyCardHtml(move, index, why);
-                }
 
                 // 4. ONE LINES CARD (refutation row + recommended row)
                 // A good move's main line already lives in the Why card's Idea row
@@ -8070,6 +8172,11 @@
                     });
                 });
 
+                const whyMore = moveExplanation.querySelector('.diag-why-more');
+                if (whyMore) {
+                    whyMore.addEventListener('toggle', function() { saveWhyDetailsOpen(this.open); });
+                }
+
                 // Hovering a Why row previews its first move as an arrow
                 moveExplanation.querySelectorAll('.diag-why-row[data-from]').forEach(row => {
                     row.addEventListener('mouseenter', function() {
@@ -8152,8 +8259,65 @@
                     </div>`);
                 });
 
-                if (rows.length === 0) return '';
-                return `<div class="diag-why">${rows.join('')}</div>`;
+                const blufHtml = renderBlufHtml(move, why);
+                if (!blufHtml) {
+                    // Cached analyses from before the BLUF existed keep the flat layout
+                    if (rows.length === 0) return '';
+                    return `<div class="diag-why">${rows.join('')}</div>`;
+                }
+                const moreHtml = rows.length > 0
+                    ? `<details class="diag-why-more"${readWhyDetailsOpen() ? ' open' : ''}>
+                        <summary class="diag-why-more-toggle"><i class="bi bi-chevron-right"></i>Dig deeper</summary>
+                        ${rows.join('')}
+                    </details>`
+                    : '';
+                return `<div class="diag-why">${blufHtml}${moreHtml}</div>`;
+            }
+
+            const WHY_DETAILS_KEY = 'whyblunder_why_details_open';
+            function readWhyDetailsOpen() {
+                try { return localStorage.getItem(WHY_DETAILS_KEY) === '1'; } catch (e) { return false; }
+            }
+            function saveWhyDetailsOpen(open) {
+                try { localStorage.setItem(WHY_DETAILS_KEY, open ? '1' : '0'); } catch (e) { /* storage unavailable */ }
+            }
+
+            // Tone of a standing from the mover's side: good, even or bad
+            function blufTone(band) {
+                const rank = { 'losing': 0, 'worse': 1, 'slightly-worse': 2, 'equal': 3, 'slightly-better': 4, 'better': 5, 'winning': 6 }[band];
+                if (rank === undefined || rank === 3) return 'tone-even';
+                return rank > 3 ? 'tone-good' : 'tone-bad';
+            }
+
+            /**
+             * Bottom line up front: how the game stood before the move, how it stands
+             * after it, and one sentence tying them together.
+             */
+            function renderBlufHtml(move, why) {
+                const b = why && why.bluf;
+                if (!b || !b.before || !b.after || !b.text) return '';
+                const beforeNotes = [b.before.material];
+                if (why.threat && why.threat.san) {
+                    beforeNotes.push(`${move.is_white ? 'Black' : 'White'} threatens ${why.threat.san}`);
+                }
+                const side = (label, s, notes) => `<div class="diag-bluf-side">
+                        <span class="diag-bluf-label">${label}</span>
+                        <span class="diag-bluf-standing ${blufTone(s.band)}">${escapeHtml(s.label)}</span>
+                        <span class="diag-bluf-eval">${escapeHtml(s.evaluation || '')}</span>
+                        ${notes.filter(Boolean).length ? `<span class="diag-bluf-note">${notes.filter(Boolean).map(escapeHtml).join(' · ')}</span>` : ''}
+                    </div>`;
+                const shiftIcon = b.shift === 'down' ? 'bi-arrow-down-right' : (b.shift === 'up' ? 'bi-arrow-up-right' : 'bi-arrow-right');
+                return `<div class="diag-bluf">
+                    <div class="diag-bluf-strip">
+                        ${side('Before', b.before, beforeNotes)}
+                        <div class="diag-bluf-move is-${b.shift || 'same'}">
+                            <b class="line-move-san">${formatSanWithFigurines(b.move || move.move, move.is_white)}</b>
+                            <i class="bi ${shiftIcon}"></i>
+                        </div>
+                        ${side('After', b.after, [])}
+                    </div>
+                    <div class="diag-bluf-text"><span class="diag-bluf-lead">Bottom line</span>${highlightSanInText(b.text, [move.move, move.analysis && move.analysis.best_move])}</div>
+                </div>`;
             }
 
             function updateBoardSquareHighlights(fromSquare, toSquare) {

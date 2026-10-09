@@ -773,6 +773,10 @@ console.log("✓ Variation Navigation & Interactive Alt Lines passed!");
 // -------------------------------------------------------------
 console.log("Testing Why card markup & threat pass...");
 assert(indexHtml.includes('function renderWhyCardHtml(move, index, why)'), "index.html must render the Why card");
+assert(indexHtml.includes('function renderBlufHtml(move, why)') && indexHtml.includes('class="diag-bluf-strip"'), "index.html must render the BLUF strip (before -> move -> after)");
+assert(indexHtml.includes('class="diag-why-more"') && indexHtml.includes('Dig deeper'), "Why card details must sit behind a Dig deeper toggle");
+assert(indexHtml.includes('.diag-bluf {') && indexHtml.includes('.diag-bluf-standing.tone-bad'), "index.html must style the BLUF");
+assert(indexHtml.indexOf('// 2. WHY CARD') < indexHtml.indexOf('// 3. ONE META ROW'), "the Why card (BLUF) must render before the meta row");
 assert(indexHtml.includes('.diag-why {') && indexHtml.includes('.diag-why-row') && indexHtml.includes('.diag-why-verdict.is-equal'), "index.html must style the Why card");
 assert(indexHtml.includes('.arrow-alt {'), "index.html must style alternative arrows");
 assert(indexHtml.includes('function getWhyVariationData(moveIndex, lineType)'), "index.html must build Why variation lines");

@@ -151,12 +151,18 @@ The UI in `index.html` expects analyzed moves from `BrowserWhyBlunder` / `MoveDi
       situation: { band: "worse", text: "White is clearly better (+3.36). ..." },
       threat: { san, from, to, fen, pv, evaluation, gainCp, text } | null, // null-move search, key moments only
       idea: { text, pv, pvFormatted } | null,
-      alternatives: [{ san, uci, from, to, evaluation, cp, wp, deltaWp, verdict, reason, pv, pvFormatted }]
+      alternatives: [{ san, uci, from, to, evaluation, cp, wp, deltaWp, verdict, reason, pv, pvFormatted }],
+      bluf: {                     // Bottom line up front, shown above the "Dig deeper" rows
+        before: { band, label: "White is clearly better", evaluation: "+1.79", material: "Material is level" },
+        after: { band, label: "Roughly equal", evaluation: "+0.16" },
+        move: "Nxe5", quality: "mistake", shift: "down",   // 'up' | 'same' | 'down' (mover POV)
+        text: "Nxe5 lets White's advantage slip; the position is now level. After 4...Qg5, ..."
+      }
     }
   }
 }
 ```
-`why` is optional: games in the analysis cache from before it existed render the older layout.
+`why` is optional: games in the analysis cache from before it existed render the older layout. The same goes for `why.bluf`: without it the Why card renders its rows flat, with no "Dig deeper" toggle.
 Any changes to diagnostic fields must be **additive** (e.g. `evidence`, `confidence`).
 
 ---
